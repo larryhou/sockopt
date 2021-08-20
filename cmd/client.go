@@ -6,7 +6,6 @@ import (
     "github.com/larryhou/sockopt"
     "log"
     "net"
-    "syscall"
     "unsafe"
 )
 
@@ -20,20 +19,18 @@ func main() {
     flag.IntVar(&port, "port", 2121, "server port")
     flag.Parse()
 
-    dialer := &net.Dialer{Control: func(network, address string, c syscall.RawConn) error {
-        return c.Control(func(fd uintptr) {
-            if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
-                log.Printf("%d:SetNoDelay err: %v", fd, err)
-            }
-            if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
-                log.Printf("%d:SetQuickAck err: %v", fd, err)
-            }
-        })
-    }}
-
-    if c, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", addr, port)); err != nil {panic(err)} else {
+    if c, err := net.Dial("tcp", fmt.Sprintf("%s:%d", addr, port)); err != nil {panic(err)} else {
         if t, ok := c.(*net.TCPConn); ok {
-            t.SetNoDelay(false)
+            if r, err := t.SyscallConn(); err == nil {
+                r.Control(func(fd uintptr) {
+                    if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
+                        log.Printf("%d:SetNoDelay err: %v", fd, err)
+                    }
+                    if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
+                        log.Printf("%d:SetQuickAck err: %v", fd, err)
+                    }
+                })
+            }
         }
         buf := make([]byte, 16<<10)
         stream := &sockopt.Stream{Rwp: c}
