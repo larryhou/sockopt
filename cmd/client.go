@@ -32,12 +32,16 @@ func main() {
     }}
 
     if c, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", addr, port)); err != nil {panic(err)} else {
+        if t, ok := c.(*net.TCPConn); ok {
+            t.SetNoDelay(false)
+        }
         buf := make([]byte, 16<<10)
         stream := &sockopt.Stream{Rwp: c}
         defer stream.Close()
         for {
             c.Write([]byte{'x'})
             c.Write([]byte{'y'})
+            c.Write([]byte{'z'})
             if s, err := stream.ReadString(buf); err != nil {panic(err)} else {
                 fmt.Printf(">> %s", s)
             }

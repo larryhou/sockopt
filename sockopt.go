@@ -8,7 +8,7 @@ import (
 )
 
 func SetNoDelay(fd int, enabled int) error {
-    fmt.Printf("%d:SetNoDelay enabled=%d\n", fd, enabled)
+    fmt.Printf("%d:TCP_NODELAY enabled=%d\n", fd, enabled)
     return syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, syscall.TCP_NODELAY, enabled)
 }
 

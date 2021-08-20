@@ -37,6 +37,13 @@ func main() {
     if s, err := config.Listen(context.Background(), "tcp", fmt.Sprintf(":%d", port)); err != nil {panic(err)} else {
         for {
             if c, err := s.Accept(); err == nil {
+                if t, ok := c.(*net.TCPConn); ok {
+                    if r, err := t.SyscallConn(); err == nil {
+                        r.Control(func(fd uintptr) {
+                            log.Printf("%02d %s\n", fd, c.RemoteAddr())
+                        })
+                    }
+                }
                 go func() {
                     defer c.Close()
                     buf := &bytes.Buffer{}
