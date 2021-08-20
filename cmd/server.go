@@ -2,7 +2,6 @@ package main
 
 import (
     "bytes"
-    "context"
     "encoding/binary"
     "flag"
     "fmt"
@@ -10,7 +9,6 @@ import (
     "io"
     "log"
     "net"
-    "syscall"
     "time"
     "unsafe"
 )
@@ -23,27 +21,23 @@ func main() {
     flag.IntVar(&port, "port", 2121, "server listen port")
     flag.Parse()
 
-    config := &net.ListenConfig{Control: func(network, address string, c syscall.RawConn) error {
-        return c.Control(func(fd uintptr) {
-            if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
-                log.Printf("%d:SetNoDelay err: %v", fd, err)
-            }
-            if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
-                log.Printf("%d:SetQuickAck err: %v", fd, err)
-            }
-        })
-    }}
-
-    if s, err := config.Listen(context.Background(), "tcp", fmt.Sprintf(":%d", port)); err != nil {panic(err)} else {
+    if s, err := net.Listen("tcp", fmt.Sprintf(":%d", port)); err != nil {panic(err)} else {
         for {
             if c, err := s.Accept(); err == nil {
                 if t, ok := c.(*net.TCPConn); ok {
                     if r, err := t.SyscallConn(); err == nil {
                         r.Control(func(fd uintptr) {
                             log.Printf("%02d %s\n", fd, c.RemoteAddr())
+                            if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
+                                log.Printf("%d:SetNoDelay err: %v", fd, err)
+                            }
+                            if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
+                                log.Printf("%d:SetQuickAck err: %v", fd, err)
+                            }
                         })
                     }
                 }
+                
                 go func() {
                     defer c.Close()
                     buf := &bytes.Buffer{}
