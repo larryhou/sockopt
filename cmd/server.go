@@ -28,16 +28,18 @@ func main() {
                     if r, err := t.SyscallConn(); err == nil {
                         r.Control(func(fd uintptr) {
                             log.Printf("%02d %s\n", fd, c.RemoteAddr())
+                            sockopt.PrintSockopts(int(fd))
                             if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
                                 log.Printf("%d:SetNoDelay err: %v", fd, err)
                             }
                             if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
                                 log.Printf("%d:SetQuickAck err: %v", fd, err)
                             }
+                            sockopt.PrintSockopts(int(fd))
                         })
                     }
                 }
-                
+
                 go func() {
                     defer c.Close()
                     buf := &bytes.Buffer{}

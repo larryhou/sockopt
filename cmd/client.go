@@ -4,7 +4,6 @@ import (
     "flag"
     "fmt"
     "github.com/larryhou/sockopt"
-    "log"
     "net"
     "unsafe"
 )
@@ -23,12 +22,14 @@ func main() {
         if t, ok := c.(*net.TCPConn); ok {
             if r, err := t.SyscallConn(); err == nil {
                 r.Control(func(fd uintptr) {
+                    sockopt.PrintSockopts(int(fd))
                     if err := sockopt.SetNoDelay(int(fd), int(*(*byte)(unsafe.Pointer(&noDelay)))); err != nil {
-                        log.Printf("%d:SetNoDelay err: %v", fd, err)
+                        fmt.Printf("%d:SetNoDelay err: %v\n", fd, err)
                     }
                     if err := sockopt.SetQuickAck(int(fd), int(*(*byte)(unsafe.Pointer(&quickAck)))); err != nil {
-                        log.Printf("%d:SetQuickAck err: %v", fd, err)
+                        fmt.Printf("%d:SetQuickAck err: %v\n", fd, err)
                     }
+                    sockopt.PrintSockopts(int(fd))
                 })
             }
         }
